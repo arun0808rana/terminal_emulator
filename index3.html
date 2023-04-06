@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node.js Terminal Emulator</title>
+    <style>
+      /* CSS styles for the terminal UI */
+      body {
+        background-color: #282c34;
+        color: #abb2bf;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 14px;
+      }
+      #terminal {
+        background-color: #1e2124;
+        border-radius: 5px;
+        box-shadow: 0 0 10px #000;
+        color: #abb2bf;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 14px;
+        height: 500px;
+        overflow-y: scroll;
+        padding: 10px;
+        margin: 20px;
+      }
+      #input {
+        background-color: #1e2124;
+        border: none;
+        color: #abb2bf;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 14px;
+        height: 20px;
+        width: 100%;
+        padding: 10px;
+        margin: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px #000;
+      }
+      .prompt {
+        color: #98c379;
+      }
+      .command {
+        color: #61afef;
+      }
+      .output {
+        color: #abb2bf;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="terminal"></div>
+    <input id="input" type="text" placeholder="Enter command...">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // Initialize the WebSocket connection
+      const socket = io();
+
+      // Get references to the terminal UI and input field
+      const terminal = document.querySelector('#terminal');
+      const input = document.querySelector('#input');
+
+      // Listen for the "output" event from the server
+      socket.on('output', (data) => {
+        // Split the data into the prompt, command, and output
+        const [prompt, command, output] = data.split(' ');
+
+        // Create a new line element
+        const line = document.createElement('div');
+
+        // Create span elements for the prompt, command, and output
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 'prompt';
+        promptSpan.innerText = prompt;
+
+        const commandSpan = document.createElement('span');
+        commandSpan.className = 'command';
+        commandSpan.innerText = command;
+
+        const outputSpan = document.createElement('span');
+        outputSpan.className = 'output';
+        outputSpan.innerText = output;
+
+        // Append the prompt, command, and output spans to the line element
+        line.appendChild(promptSpan);
+        line.appendChild(document.createTextNode(' '));
+        line.appendChild(commandSpan);
+        line.appendChild(document.createTextNode(' '));
+        line.appendChild(outputSpan);
+
+        // Append the line element to the terminal UI
+        terminal.appendChild(line);
+
+        // Scroll the terminal UI to the bottom
+        terminal.scrollTop = terminal.scrollHeight;
+      });
+
+      // Listen for keypress events on the input field
+      input.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          // Get the value of the input field
+          const cmd = input.value;
+
+          // Clear the input field
+          input.value = '';
+
+          // Send the command to the server
+          socket.emit('command', cmd);
+
+          // Create a new line element for the command
+          const line = document.createElement('div');
+                   // Append the command to the line element and add it to the terminal UI
+                   line.innerHTML += `<span class="prompt">$</span> ${cmd}`;
+          terminal.appendChild(line);
+
+          // Scroll the terminal UI to the bottom
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      });
+    </script>
+  </body>
+</html>
+

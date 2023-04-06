@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Node.js Terminal Emulator</title>
+  <style>
+    /* CSS styles for the terminal UI */
+    * {
+      font-family: monospace;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #terminal {
+      background-color: #282828;
+      color: #a89984;
+      font-size: 14px;
+      height: calc(100vh - 56px);
+      overflow-y: scroll;
+      padding: 8px;
+    }
+
+    #input {
+      background-color: #282828;
+      color: #a89984;
+      border: none;
+      font-size: 16px;
+      height: 24px;
+      width: calc(100% - 14px);
+      padding: 8px;
+      border-top: 1px solid #544f48;
+      height: 56px;
+      display: block;
+      /* border-radius: 4px; */
+      outline: none;
+      position: fixed;
+      bottom: 0;
+    }
+
+    .output-text {
+      margin-bottom: 16px;
+    }
+
+    .product-stats {
+      color: #427b58;
+    }
+
+    .cmd-preview {
+      color: #ea6962;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="terminal">
+    <!-- <div class="dollar-prompt">$</div>
+      <div class="command-preview"></div>
+      <div class="terminal-output-view"></div> -->
+  </div>
+  <input id="input" type="text" placeholder="Enter command...">
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+    integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+    crossorigin="anonymous"></script>
+  <script>
+    let cmdHistory = [];
+    let historyCursor = cmdHistory.length;
+
+    // Initialize the WebSocket connection
+    const socket = io();
+
+    // Get references to the terminal UI and input field
+    const terminal = document.querySelector('#terminal');
+    const input = document.querySelector('#input');
+    input.focus();
+
+    // Listen for the "output" event from the server
+    socket.on('output', (data) => {
+      data = data.replaceAll('\n', '<br>')
+      // Append the output to the terminal UI
+      terminal.innerHTML += `<div class="output-text">${data}</div>` + '\n';
+      // scroll to terminal bottom
+      terminal.scrollTo({
+        top: terminal.scrollHeight,
+        behavior: 'smooth'
+      });
+    });
+
+    // Listen for the "command-finished" event from the server
+    socket.on('command-finished', (data) => {
+      input.disabled = false;
+      input.focus();
+    });
+
+
+    // Listen for keypress events on the input field
+    input.addEventListener('keydown', (event) => {
+      const cmd = input.value;
+
+      // if(cmd !== ''){
+
+      // }
+
+      if (event.key === 'Enter') {
+        // Get the value of the input field
+
+
+        if (cmd === '') {
+          return;
+        }
+
+        // Clear the input field
+        input.value = '';
+
+        // clear terminal view on clear command
+        if (cmd === 'clear') {
+          terminal.innerHTML = '';
+          return;
+        }
+
+        // Send the command to the server
+        socket.emit('command', cmd);
+        input.disabled = true;
+
+        pushToHistory(cmd);
+
+        // Append the command to the terminal UI
+        terminal.innerHTML += `<span class="product-stats">dev@acer: $</span> <span class="cmd-preview">${cmd}</span> <br>`;
+      }
+
+      console.log('KEY: ', event.key)
+
+      // check arrow key movement for accessing history commands
+      if (event.key === 'ArrowUp') {
+        // cmdHistory.push
+        const len = cmdHistory.length;
+
+        if (len > 0 && historyCursor > 0) {
+          --historyCursor;
+          const lastCmd = cmdHistory[historyCursor];
+          input.value = lastCmd;
+        }
+      }
+      if (event.key === 'ArrowDown') {
+        // cmdHistory.push
+        const len = cmdHistory.length;
+
+        if (len > 0 && historyCursor < len - 1) {
+          ++historyCursor;
+          const lastCmd = cmdHistory[historyCursor];
+          input.value = lastCmd;
+        }
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && event.key == 'c') {
+        // CTRL+C was pressed
+        console.log('CTRL+C was pressed!');
+        socket.emit('ctrl+c');
+      }
+    });
+
+    function pushToHistory(cmd) {
+      // const isCmdAlreadyPresent =  cmdHistory.findIndex(item=>item === cmd);
+      // if(isCmdAlreadyPresent > -1){
+
+      // }
+
+      cmdHistory.push(cmd);
+      // reseting history cursor to point it to the last item in cmdHistory
+      historyCursor = cmdHistory.length;
+    }
+  </script>
+</body>
+
+</html>
